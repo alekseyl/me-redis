@@ -8,10 +8,17 @@ module MeRedis
 
         # hash-max-ziplist-entries must be cashed, we can't ask Redis every time we need to zip keys,
         # cause it's less performant and impossible during pipelining.
-        @hash_max_ziplist_entries = config( :get, 'hash-max-ziplist-entries' )['hash-max-ziplist-entries'].to_i
+        _config = config(:get, 'hash-max-ziplist-*' )
+        @hash_max_ziplist_entries = _config['hash-max-ziplist-entries'].to_i
         if self.class.me_config.hash_max_ziplist_entries && @hash_max_ziplist_entries != self.class.me_config.hash_max_ziplist_entries
           #if me_config configures hash-max-ziplist-entries than we assume it global
-          config( :set,'hash-max-ziplist-entries', self.class.me_config.hash_max_ziplist_entries )
+          config(:set, 'hash-max-ziplist-entries', self.class.me_config.hash_max_ziplist_entries )
+        end
+
+        if self.class.me_config.hash_max_ziplist_value &&
+            self.class.me_config.hash_max_ziplist_value != _config['hash-max-ziplist-value'].to_i
+
+          config(:set, 'hash-max-ziplist-value', self.class.me_config.hash_max_ziplist_value)
         end
       end
 

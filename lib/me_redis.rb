@@ -40,6 +40,8 @@ module MeRedis
           # if set - configures Redis hash_max_ziplist_entries value,
           # otherwise it will be filled from Redis hash-max-ziplist-value
           :hash_max_ziplist_entries,
+          # same as above only for value, only resets it globally if present
+          :hash_max_ziplist_value,
           # array or hash or string/sym of key crumbs to zip, if a hash given it used as is,
           # otherwise meredis tries to construct hash by using first char from each key + integer in base62 form for
           # subsequent appearence of a crumb starting with same char

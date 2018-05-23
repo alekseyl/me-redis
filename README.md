@@ -2,33 +2,36 @@
 
 Me - Memory Efficient
 
-This gem is delivering different kind of memory optimizations 
-for redis as easy to use set of tools.
+This gem is delivering memory optimizations for Redis with slightest code changes.
 
-To understand optimization and how to use them I 
-suggest you to read my paper on Redis memory optimization with 
-this gem introduction: https://medium.com/p/61076c7da4c
+To understand optimizations and how to use them 
+I suggest you to read my paper this topic: https://medium.com/p/61076c7da4c
 
-##Features:
+#Features:
  
-* hash key/value optimization with seamless code changes, you can replace set('object:id', value) with me_set( 'object:id', value) and free 90 byte for each ['object:id', value] pair. 
+* seamless integration with code already in use, hardest integration possible: 
+add me_ prefix to some of your methods ( me_ methods implement hash memory optimization ). 
+It's all in MeRedis configuration, not your current code. 
+
+* hash key/value optimization with seamless code changes, 
+you can replace set('object:id', value) with me_set( 'object:id', value) 
+and free 90 byte for each ['object:id', value] pair. 
 
 * zips user-friendly key crumbs according to configuration, i.e. converts for example user:id to u:id
 
 * zip integer parts of a keys with base62 encoding. Since all keys in redis are always strings, than we don't care for integers parts base, and by using base62 encoding we can 1.8 times shorten integer crumbs of keys 
 
-* respects pipelined and multi, properly works with futures. 
+* respects pipelined and multi, properly works with Futures. 
 
-* seamless integration with code already in use, apart from me_* methods 
-( me_ methods implement hash memory optimization ) it's all in MeRedis configuration, not your current code. 
+* allow different compressors for a different key namespaces, 
+   you can deflate separately objects, short strings, large strings, primitives. 
 
-* different  compressors for a different key namespaces, you can deflate separately different kind of data. You can compress objects, short strings, large strings, primitives - differently.
-
-* hot migration module with fallbacks.
+* hot migration module with fallbacks to previous keys.
 
 * rails-less, it's rails independent, you can use it apart from rails
 
-* seamless to cache old crumbs refactoring, i.e. you may rename crumbs keeping existing cache intact 
+* seamless refactoring of old crumbs, i.e. you may rename crumbs keeping 
+  existing cache intact 
 
 ## Installation
 
@@ -143,6 +146,10 @@ All the ideas is to move complexity to config.
     # otherwise it will be filled from Redis hash-max-ziplist-value
     :hash_max_ziplist_entries
     
+    # if set - configures Redis hash_max_ziplist_entries value,
+    # otherwise it will be filled from Redis hash-max-ziplist-value
+    :hash_max_ziplist_value
+     
     # array or hash or string/sym of keys crumbs to zip, 
     # if a hash given it used as is,
     # otherwise MeRedis tries to construct hash by using first char from each key given 
@@ -238,6 +245,7 @@ redis.set( 'organization:1:u:Z', ActiveRecordJSONCompressor.compress( @user ) )
 
 # If you want intersect key zipping with regexp 
 # **you must intersect them using substituted crumbs!!!**
+
 Redis.configure( 
   integers_to_base62: true,
   zip_crumbs: %i[user card card_preview organization], # -> { user: :u, card: :c, card_preview: :c1, organization: :o }
@@ -247,6 +255,9 @@ Redis.configure(
   }
 )
 
+redis.set( 'organization:1:user:62', @user )
+#under hood now converted to
+redis.set( 'o:1:u:Z', ActiveRecordJSONCompressor.compress( @user ) )
 
 # You may set key zipping rules directly with a hash:
 Redis.configure( 
@@ -264,14 +275,115 @@ Redis.configure(
   hash_max_ziplist_entries: 256,
   compress_namespaces: %i[user card card_preview]
 )
+```
+Now I may suggest some best practices for MeRedis configure:
 
+* explicit crumbs schema is preferable over implicit
+* if you are going lazy, and use implicit schemas, than avoid keys shuffling, 
+  cause it messes with your cache
+* better to configure hash-max-ziplist-* in MeRedis.configure than elsewhere.
+* use in persistent Redis-based system with extreme caution
+  
+ 
+#Custom Compressors
 
-
-
-``` 
+MeRedis allow you to compress values through different compressor. 
+Here is an example of custom compressor for ActiveRecord objects, 
+I use to test compression ratio against plain compression of to_json. 
 
 ```ruby
 
+module ActiveRecordJSONCompressor
+  # this is the example, automated for simplicity, if DB schema changes, than cache may broke!!
+  # in reallife scenario either invalidate cache, or use explicit schemas
+  # like User: { first_name: 1, last_name: 2 ... }, 
+  # than your cache will be safer on schema changes.
+  COMPRESSOR_SCHEMAS = [User, HTag].map{|mdl|
+    [mdl.to_s, mdl.column_names.each_with_index.map{ |el, i| [el, (20 + i).to_base62] }.to_h]
+  }.to_h.with_indifferent_access
+
+  REVERSE_COMPRESSOR_SCHEMA = COMPRESSOR_SCHEMAS.dup.transform_values(&:invert)
+
+  def self.compress( object )
+    use_schema = COMPRESSOR_SCHEMAS[object.class.to_s]
+    # _s - shorten for schema, s cannot be used since its a number in Base62 system
+    Zlib.deflate(
+        object.serializable_hash
+            .slice( *use_schema.keys )
+            .transform_keys{ |k| use_schema[k] }
+            .reject{ |_,v| v.blank? }
+            .merge!( _s: object.class.to_s ).to_json
+    )
+  end
+
+  def self.decompress(value)
+    compressed_hash = JSON.load( Zlib.inflate(value) )
+    model = compressed_hash.delete('_s')
+    schema = REVERSE_COMPRESSOR_SCHEMA[model]
+    model.constantize.new( compressed_hash.transform_keys{ |k| schema[k] } )
+  end
+end
+
+```
+
+#Hot migration 
+MeRedis deliver additional module for hot migration to KeyZipping and ZipToHash. 
+We don't need one in generally for base implementation of ZipValues cause 
+its getter methods fallbacks to value. 
+
+###Features
+* mget hget hgetall get exists type getset - fallbacks for key_zipping
+* me_get me_mget - fallbacks for hash zipping
+* partially respects pipelining and multi 
+* protecting you from accidentally do many to less many migration 
+  and from ZipToHash migration without key zipping ( 
+    though it's impossible to hot migrate from 'user:100' to 'user:1', 'B', 
+    because of same namespace 'user' for flat key/value pair and hashes, 
+    you'll definetely get an error ) 
+* reverse migration methods
+
+```ruby
+  redis = Redis.include( MeRedisHotMigrator ).configure( 
+    zip_crumbs: :user 
+  )
+  
+  usr_1_cache = redis.me_get('user:1')
+  
+  all_user_keys = redis.keys('user*') 
+  redis.migrate_to_hash_representation( all_user_keys )
+  
+  usr_1_cache == redis.me_get('user:1') # true
+  
+  redis.reverse_from_hash_representation!( all_user_keys )
+  
+  usr_1_cache == redis.me_get('user:1') # true
+
+```
+
+For persistent store use with extreme caution!! 
+Backup, test, test, user test and after you are sure than you may migrate. 
+
+Try not to stuck with it because doing double amount of actions, 
+do BG deploy of code, run migration in parallel, replace MeRedisHotMigrator with MeRedis
+do BG deploy and you are done. 
+
+#Limitations
+
+###Me_* methods limitation
+
+Some of me_methods like me_mget/me_mset/me_getset 
+are imitations for corresponded base methods behaviour through 
+pipeline and transactions. So inside pipelined call it may not 
+deliver a completely equal behaviour. 
+
+me_mget has an additional double me_mget_p in case you need to use it with futures. 
+
+###ZipKeys and ZipValues
+As I already mention if you want to use custom prefix regex 
+for zipping values than it must be constructed with a crumbs substitutions, 
+not the original crumb, see config example. 
+
+```ruby
 
 ```
                  
@@ -290,3 +402,7 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/alekse
 
 The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
 
+## ToDo List
+
+* add keys method 
+* refactor readme

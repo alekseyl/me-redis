@@ -6,10 +6,10 @@ require 'me_redis'
 class RedisSafety < Redis
   def initialize(options = {})
     options[:db] = ENV['TEST_REDIS_DB'] || 5
-    super(options).tap {
+    super(options).tap do
       # preventing accidental connect to existing DB!
-      raise "Redis DB contains keys! Check if the config is appropriate and flushdb before running test" if self.keys('*').length > 0
-    }
+      raise "Redis DB contains keys! Check if the TEST_REDIS_DB ENV is appropriate and flushdb before running test" if self.keys('*').length > 0
+    end
   end
 end
 
@@ -110,9 +110,15 @@ class MeRedisTest < Minitest::Test
     MeConfigureTest.include(MeRedis)
 
     MeConfigureTest.configure {|c|
+      c.hash_max_ziplist_value = 100
+      c.hash_max_ziplist_entries = 100
       c.compress_namespaces = [:key, :hkey]
       c.zip_crumbs = 'test|test_me'.split('|')
     }
+
+    redis = MeConfigureTest.new
+    assert( redis.config(:get, 'hash-max-ziplist-*')['hash-max-ziplist-entries'].to_i == 100 )
+    assert( redis.config(:get, 'hash-max-ziplist-*')['hash-max-ziplist-value'].to_i == 100 )
 
     assert(MeConfigureTest.me_config.default_compressor == MeRedis::ZipValues::ZlibCompressor)
     assert(MeConfigureTest.zip_ns_finder == {
@@ -144,6 +150,7 @@ class MeRedisTest < Minitest::Test
     assert(MeConfigureTest.me_config.compress_namespaces == {'key' => MeConfigureTest.me_config.default_compressor})
     assert(MeConfigureTest.key_zip_regxp == /(test)/)
     assert(MeConfigureTest.me_config.zip_crumbs == {'test' => 'ts'})
+
 
     key_rgxp = /key:[\d]+:/
     MeConfigureTest.configure(
