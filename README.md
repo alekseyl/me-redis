@@ -7,7 +7,7 @@ This gem is delivering memory optimizations for Redis with slightest code change
 To understand optimizations and how to use them 
 I suggest you to read my paper this topic: https://medium.com/p/61076c7da4c
 
-#Features:
+## Features:
  
 * seamless integration with code already in use, hardest integration possible: 
 add me_ prefix to some of your methods ( me_ methods implement hash memory optimization ). 
