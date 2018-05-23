@@ -94,7 +94,7 @@ If you want to include them separately look at MeRedis.included method:
 
 This is the right chain of prepending/including, so just remove unnecessary module.
 
-###Base use
+### Base use
 
 ```ruby
   redis = Redis.new
@@ -135,7 +135,7 @@ As you can see you can get a result with smallest or even none code changes!
 
 All the ideas is to move complexity to config.
    
-###Config
+### Config
 ```ruby
 
   Redis.include(MeRedis).configure( hash_max_ziplist_entries: 512 ) 
@@ -183,7 +183,7 @@ All the ideas is to move complexity to config.
     # any kind of object which responds to compress/decompress methods
     :default_compressor
 ```
-  ###Config examples
+  ### Config examples
   
 ```ruby
 
@@ -276,6 +276,7 @@ Redis.configure(
   compress_namespaces: %i[user card card_preview]
 )
 ```
+### Config best practices
 Now I may suggest some best practices for MeRedis configure:
 
 * explicit crumbs schema is preferable over implicit
@@ -285,11 +286,11 @@ Now I may suggest some best practices for MeRedis configure:
 * use in persistent Redis-based system with extreme caution
   
  
-#Custom Compressors
+# Custom Compressors
 
 MeRedis allow you to compress values through different compressor. 
 Here is an example of custom compressor for ActiveRecord objects, 
-I use to test compression ratio against plain compression of to_json. 
+I use to test compression ratio against plain compression of to_json ( it takes ~40% less memory than Zlib.deflate(object.to_json) ). 
 
 ```ruby
 
@@ -326,12 +327,13 @@ end
 
 ```
 
-#Hot migration 
-MeRedis deliver additional module for hot migration to KeyZipping and ZipToHash. 
-We don't need one in generally for base implementation of ZipValues cause 
+# Hot migration 
+MeRedis deliver additional module MeRedisHotMigrator for hot migration to KeyZipping and ZipToHash. 
+
+We don't need one in generally for base implementation of ZipValues module cause 
 its getter methods fallbacks to value. 
 
-###Features
+### Features
 * mget hget hgetall get exists type getset - fallbacks for key_zipping
 * me_get me_mget - fallbacks for hash zipping
 * partially respects pipelining and multi 
@@ -361,31 +363,32 @@ its getter methods fallbacks to value.
 ```
 
 For persistent store use with extreme caution!! 
-Backup, test, test, user test and after you are sure than you may migrate. 
+Backup, test, test, user test and after you are completely sure than you may migrate. 
 
-Try not to stuck with it because doing double amount of actions, 
-do BG deploy of code, run migration in parallel, replace MeRedisHotMigrator with MeRedis
-do BG deploy and you are done. 
+Try not to stuck with MeRedisHotMigrator because doing double amount of actions: 
+ 
+ 1. do BG deploy of code with MeRedisHotMigrator, 
+ 2. run migration in parallel, 
+ 3. replace MeRedisHotMigrator with MeRedis
+ 4. do BG deploy 
+ 
+ and you are done. 
 
-#Limitations
+# Limitations
 
-###Me_* methods limitation
+### Me_* methods limitation
 
 Some of me_methods like me_mget/me_mset/me_getset 
-are imitations for corresponded base methods behaviour through 
+are imitations for corresponded Redis base methods behaviour through 
 pipeline and transactions. So inside pipelined call it may not 
 deliver a completely equal behaviour. 
 
 me_mget has an additional double me_mget_p in case you need to use it with futures. 
 
-###ZipKeys and ZipValues
+### ZipKeys and ZipValues
 As I already mention if you want to use custom prefix regex 
 for zipping values than it must be constructed with a crumbs substitutions, 
 not the original crumb, see config example. 
-
-```ruby
-
-```
                  
 ## Development
 
