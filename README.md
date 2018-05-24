@@ -290,7 +290,8 @@ Now I may suggest some best practices for MeRedis configure:
 
 MeRedis allow you to compress values through different compressor. 
 Here is an example of custom compressor for ActiveRecord objects, 
-I use to test compression ratio against plain compression of to_json ( it takes ~40% less memory than Zlib.deflate(object.to_json) ). 
+I use it to test compression ratio against plain compression of to_json 
+( it takes ~40% less memory than Zlib.deflate(object.to_json) ). 
 
 ```ruby
 
@@ -331,11 +332,11 @@ end
 MeRedis deliver additional module MeRedisHotMigrator for hot migration to KeyZipping and ZipToHash. 
 
 We don't need one in generally for base implementation of ZipValues module cause 
-its getter methods fallbacks to value. 
+its getter methods fallbacks to values. 
 
 ### Features
-* mget hget hgetall get exists type getset - fallbacks for key_zipping
-* me_get me_mget - fallbacks for hash zipping
+* mget hget hgetall get exists type getset - fallbacks to original methods for key_zipping
+* me_get me_mget - fallbacks to original methods for hash zipping
 * partially respects pipelining and multi 
 * protecting you from accidentally do many to less many migration 
   and from ZipToHash migration without key zipping ( 
@@ -352,14 +353,19 @@ its getter methods fallbacks to value.
   usr_1_cache = redis.me_get('user:1')
   
   all_user_keys = redis.keys('user*') 
+  # it doesn't delete all_user_keys!!! they still all in the Redis
   redis.migrate_to_hash_representation( all_user_keys )
-  
   usr_1_cache == redis.me_get('user:1') # true
   
+  redis.del( *all_user_keys )
+  # now you a ready to measure memory bonus you've got
+  ap redis.info(:memory)
+  
+  usr_1_cache == redis.me_get('user:1') # true
+    
   redis.reverse_from_hash_representation!( all_user_keys )
   
   usr_1_cache == redis.me_get('user:1') # true
-
 ```
 
 For persistent store use with extreme caution!! 
@@ -373,6 +379,14 @@ Try not to stuck with MeRedisHotMigrator because doing double amount of actions:
  4. do BG deploy 
  
  and you are done. 
+ 
+# Debug 
+
+1. Check if modules you using override appropriate method ( if not make issue :) )
+2. Check the order of prepending / including modules ( look into MeRedis.included to see how things must be done ) 
+3. Call ap Redis.me_config and check it over your expectation, 
+   mistakes are usually in config. Don't forget - namespaces inside regexp must be in zipped form!
+4. Trace through code and inspect zip_key and zip? output.  
 
 # Limitations
 
@@ -383,7 +397,7 @@ are imitations for corresponded Redis base methods behaviour through
 pipeline and transactions. So inside pipelined call it may not 
 deliver a completely equal behaviour. 
 
-me_mget has an additional double me_mget_p in case you need to use it with futures. 
+me_mget has a method double me_mget_p in case you need to use it with futures. 
 
 ### ZipKeys and ZipValues
 As I already mention if you want to use custom prefix regex 
