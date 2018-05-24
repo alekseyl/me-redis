@@ -385,8 +385,10 @@ Try not to stuck with MeRedisHotMigrator because doing double amount of actions:
 1. Check if modules you using override appropriate method ( if not make issue :) )
 2. Check the order of prepending / including modules ( look into MeRedis.included to see how things must be done ) 
 3. Call ap Redis.me_config and check it over your expectation, 
-   mistakes are usually in config. Don't forget - namespaces inside regexp must be in zipped form!
-4. Trace through code and inspect zip_key and zip? output.  
+   mistakes are usually in config. Don't forget - namespaces inside regexp must be in zipped form ( integers became base62 integers strings and crumbs are zipped )!
+4. Check hash-max-size-value, if your average data size is greater 
+   than hash-max-size-value than hash optimization will not bring resource savings.
+5. Trace through code and inspect zip_key and zip? output.  
 
 # Limitations
 
@@ -409,6 +411,21 @@ not the original crumb, see config example.
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+
+## Testing
+
+### MockRedis
+
+If you are using in mock_redis gem for testing purpose and see some test 
+breakage me-redis has a MockRedis extended class.
+Its imitate single DB for all instances of MockRedis class 
+and add some methods MeRedis rely upon. Its not a complete replacement 
+for Redis class, but you can try it out.
+ 
+
+```
+  rake test REDIS_TEST_DB=5
+```
 
 ## Contributing
 

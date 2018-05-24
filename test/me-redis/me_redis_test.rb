@@ -5,7 +5,7 @@ require 'me_redis'
 # safety for Redis class, prevents to run test if base is not empty
 class RedisSafety < Redis
   def initialize(options = {})
-    options[:db] = ENV['TEST_REDIS_DB'] || 5
+    options[:db] = ENV['REDIS_TEST_DB'] || 5
     super(options).tap do
       # preventing accidental connect to existing DB!
       raise "Redis DB contains keys! Check if the TEST_REDIS_DB ENV is appropriate and flushdb before running test" if self.keys('*').length > 0
