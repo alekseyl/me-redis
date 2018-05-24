@@ -5,7 +5,7 @@ Me - Memory Efficient
 This gem is delivering memory optimizations for Redis with slightest code changes.
 
 To understand optimizations and how to use them 
-I suggest you to read my paper this topic: https://medium.com/p/61076c7da4c
+I suggest you to read my paper this topic: https://medium.com/@leshchuk/zipem-all-61076c7da4c
 
 ## Features:
  
