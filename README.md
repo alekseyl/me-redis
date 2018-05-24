@@ -7,6 +7,8 @@ This gem is delivering memory optimizations for Redis with slightest code change
 To understand optimizations and how to use them 
 I suggest you to read my paper this topic: https://medium.com/@leshchuk/zipem-all-61076c7da4c
 
+Compatibility: ruby >= 2.4, redis gem >= 3.0.4
+
 ## Features:
  
 * seamless integration with code already in use, hardest integration possible: 
