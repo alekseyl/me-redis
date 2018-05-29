@@ -11,17 +11,13 @@ Compatibility: ruby >= 2.4, redis gem >= 3.0.4
 
 ## Features:
  
-* seamless integration with code already in use, hardest integration possible: 
-add me_ prefix to some of your methods ( me_ methods implement hash memory optimization ). 
-It's all in MeRedis configuration, not your current code. 
+* seamless integration with code already in use. **It's all in MeRedis configuration, not your current code.** 
 
-* hash key/value optimization with seamless code changes, 
-you can replace set('object:id', value) with me_set( 'object:id', value) 
-and free 90 byte for each ['object:id', value] pair. 
+* hash key/value optimization with seamless code changes, just replace set('object:id', value) with me_set( 'object:id', value) and free upto 90 bytes for each ['object:id', value] pair. 
 
 * zips user-friendly key crumbs according to configuration, i.e. converts for example user:id to u:id
 
-* zip integer parts of a keys with base62 encoding. Since all keys in redis are always strings, than we don't care for integers parts base, and by using base62 encoding we can 1.8 times shorten integer crumbs of keys 
+* zip integer parts of keys with base62 encoding. Since all keys in redis are always strings, than we don't care for integer parts base, and by using base62 encoding we can shorten them upto 1.8 times shorter  
 
 * respects pipelined and multi, properly works with Futures. 
 
@@ -57,7 +53,9 @@ Or install it yourself as:
 1) less memory on redis side is better than less performance on ruby side
 2) more result with less code changes,
    i.e. overriding native redis methods with proper configuration basis is 
-   preferred over mixin new methods
+   preferred over mixin new methods. 
+   
+I wanted magic to happend: mix all kind of optimizations without making 3 call of different methods.   
 
 MeRedis based on three general optimization ideas:
 * shorten keys
@@ -75,7 +73,7 @@ way to deal with them all is call include upon MeRedis:
    redis = Redis.new
 ``` 
 
-If you want to keep a clear Redis class, you can do this way:
+If you want to keep a clear Redis class, you can do it this way:
 
 ```ruby
    me_redis = Class.new(Redis).include(MeRedis).configure({...}).new
@@ -153,9 +151,9 @@ All the ideas is to move complexity to config.
     :hash_max_ziplist_value
      
     # array or hash or string/sym of keys crumbs to zip, 
-    # if a hash given it used as is,
+    # when a hash is given it used as is,
     # otherwise MeRedis tries to construct hash by using first char from each key given 
-    # + integer in base62 starting from 1 for subsequent appearence of a crumbs starting with same chars
+    # + integer in base62 starting from 1 for subsequent appearence of a crumbs starting with same char
     :zip_crumbs
     
     # set to true if you want to zip ALL integers in keys to base62 form
@@ -252,8 +250,8 @@ Redis.configure(
   integers_to_base62: true,
   zip_crumbs: %i[user card card_preview organization], # -> { user: :u, card: :c, card_preview: :c1, organization: :o }
   compress_namespaces: {
-      /o:[a-zA-Z\d]+:card_preview/ => MeRedis::ZipValues::ZlibCompressor,
-      [:user, :card].map{|crumb| /o:[a-zA-Z\d]+:#{crumb}/ } => ActiveRecordJSONCompressor 
+      /o:[a-zA-Z\d]+:c1/ => MeRedis::ZipValues::ZlibCompressor,
+      [:u, :c].map{|crumb| /o:[a-zA-Z\d]+:#{crumb}/ } => ActiveRecordJSONCompressor 
   }
 )
 
@@ -282,18 +280,17 @@ Redis.configure(
 Now I may suggest some best practices for MeRedis configure:
 
 * explicit crumbs schema is preferable over implicit
-* if you are going lazy, and use implicit schemas, than avoid keys shuffling, 
+* if you are going lazy, and use implicit schemas, than avoid keys reshuffling, 
   cause it messes with your cache
 * better to configure hash-max-ziplist-* in MeRedis.configure than elsewhere.
-* use in persistent Redis-based system with extreme caution
+* use MeRedis in persistent Redis-based system with extreme caution!
   
  
 # Custom Compressors
 
 MeRedis allow you to compress values through different compressor. 
 Here is an example of custom compressor for ActiveRecord objects, 
-I use it to test compression ratio against plain compression of to_json 
-( it takes ~40% less memory than Zlib.deflate(object.to_json) ). 
+I use it to test compression ratio against plain compression of to_json. It takes ~40% less memory than Zlib.deflate(object.to_json). 
 
 ```ruby
 
@@ -303,7 +300,7 @@ module ActiveRecordJSONCompressor
   # like User: { first_name: 1, last_name: 2 ... }, 
   # than your cache will be safer on schema changes.
   COMPRESSOR_SCHEMAS = [User, HTag].map{|mdl|
-    [mdl.to_s, mdl.column_names.each_with_index.map{ |el, i| [el, (20 + i).to_base62] }.to_h]
+    [mdl.to_s, mdl.column_names.each_with_index.map{ |el, i| [el, i.to_base62] }.to_h]
   }.to_h.with_indifferent_access
 
   REVERSE_COMPRESSOR_SCHEMA = COMPRESSOR_SCHEMAS.dup.transform_values(&:invert)
@@ -344,7 +341,7 @@ its getter methods fallbacks to values.
   and from ZipToHash migration without key zipping ( 
     though it's impossible to hot migrate from 'user:100' to 'user:1', 'B', 
     because of same namespace 'user' for flat key/value pair and hashes, 
-    you'll definetely get an error ) 
+    you'll definetely get an error from Redis ) 
 * reverse migration methods
 
 ```ruby
@@ -373,7 +370,7 @@ its getter methods fallbacks to values.
 For persistent store use with extreme caution!! 
 Backup, test, test, user test and after you are completely sure than you may migrate. 
 
-Try not to stuck with MeRedisHotMigrator because doing double amount of actions: 
+Try not to stuck with MeRedisHotMigrator because it doing double amount of actions: 
  
  1. do BG deploy of code with MeRedisHotMigrator, 
  2. run migration in parallel, 
@@ -382,7 +379,7 @@ Try not to stuck with MeRedisHotMigrator because doing double amount of actions:
  
  and you are done. 
  
-# Debug 
+# Debug and broken expectations
 
 1. Check if modules you using override appropriate method ( if not make issue :) )
 2. Check the order of prepending / including modules ( look into MeRedis.included to see how things must be done ) 
@@ -390,6 +387,7 @@ Try not to stuck with MeRedisHotMigrator because doing double amount of actions:
    mistakes are usually in config. Don't forget - namespaces inside regexp must be in zipped form ( integers became base62 integers strings and crumbs are zipped )!
 4. Check hash-max-size-value, if your average data size is greater 
    than hash-max-size-value than hash optimization will not bring resource savings.
+5. Check hash-max-size-entries if it small than hash effect is less than expected
 5. Trace through code and inspect zip_key and zip? output.  
 
 # Limitations
@@ -425,6 +423,9 @@ and add some methods MeRedis rely upon. Its not a complete replacement
 for Redis class, but you can try it out.
  
 
+### RedisSafety
+ MeRedis tests itself against RedisSafety class which is a Redis descendant class. All instances of RedisSafety ensure that Redis DB is empty otherwise they will raise an error. This is a precaution measure to prevent you from accidentally  run MeRedis test again production DB.
+ 
 ```
   rake test REDIS_TEST_DB=5
 ```
