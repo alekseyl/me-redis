@@ -28,7 +28,6 @@ module MeRedis
     def hmget( key, *args ); super( zip_key(key), *args ) end
     #---- Hash methods END --------------------
 
-
     def incr( key ); super( zip_key(key) ) end
     def get( key ); super( zip_key(key) ) end
 

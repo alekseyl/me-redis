@@ -22,47 +22,6 @@ module MeRedis
       COMMANDS = %i[incr incrby hincrby get hget getset mget hgetall].map{ |cmd| [cmd, true]}.to_h
     end
 
-    module PrependMethods
-      def pipelined(&block)
-        super do |redis|
-          block.call(redis)
-          _patch_futures(@client)
-        end
-      end
-
-      def multi(&block)
-        super do |redis|
-          block.call(redis)
-          _patch_futures(@client)
-        end
-      end
-
-      def _patch_futures(client)
-        client.futures.each do |ftr|
-
-          ftr.set_transformation do |vl|
-            if vl && FutureUnzip::COMMANDS[ftr._command[0]]
-              # we only dealing here with GET methods, so it could be hash getters or get/mget
-              keys = ftr._command[0][0] == 'h' ? ftr._command[1, 1] : ftr._command[1..-1]
-              if ftr._command[0] == :mget
-                vl.each_with_index.map{ |v, i| zip?(keys[i]) ? self.class.get_compressor_for_key(keys[i]).decompress( v ) : v }
-              elsif zip?(keys[0])
-                compressor = self.class.get_compressor_for_key(keys[0])
-                # on hash commands it could be an array
-                vl.is_a?(Array) ? vl.map!{ |v| compressor.decompress(v) } : compressor.decompress(vl)
-              else
-                vl
-              end
-            else
-              vl
-            end
-          end
-
-        end
-      end
-    end
-
-
     module ZlibCompressor
       def self.compress(value); Zlib.deflate(value.to_s ) end
 
@@ -78,22 +37,51 @@ module MeRedis
       def self.decompress(value); value end
     end
 
-    # for the global gzipping
     def self.prepended(base)
       base::Future.prepend(FutureUnzip)
-      base.prepend(PrependMethods)
 
-      base.extend( MeRedis::ClassMethods )
+      base.extend(MeRedis::ClassMethods)
       base.me_config.default_compressor = MeRedis::ZipValues::ZlibCompressor
     end
-    # for object extending
-    def self.included(base)
-      base::Future.prepend(FutureUnzip)
-      base.prepend(PrependMethods)
 
-      base.extend( MeRedis::ClassMethods )
-      base.me_config.default_compressor = MeRedis::ZipValues::ZlibCompressor
+    def pipelined(&block)
+      super do |redis|
+        block.call(redis)
+        _patch_futures(@client)
+      end
     end
+
+    def multi(&block)
+      super do |redis|
+        block.call(redis)
+        _patch_futures(@client)
+      end
+    end
+
+    def _patch_futures(client)
+      client.futures.each do |ftr|
+
+        ftr.set_transformation do |vl|
+          if vl && FutureUnzip::COMMANDS[ftr._command[0]]
+            # we only dealing here with GET methods, so it could be hash getters or get/mget
+            keys = ftr._command[0][0] == 'h' ? ftr._command[1, 1] : ftr._command[1..-1]
+            if ftr._command[0] == :mget
+              vl.each_with_index.map{ |v, i| zip?(keys[i]) ? self.class.get_compressor_for_key(keys[i]).decompress( v ) : v }
+            elsif zip?(keys[0])
+              compressor = self.class.get_compressor_for_key(keys[0])
+              # on hash commands it could be an array
+              vl.is_a?(Array) ? vl.map!{ |v| compressor.decompress(v) } : compressor.decompress(vl)
+            else
+              vl
+            end
+          else
+            vl
+          end
+        end
+
+      end
+    end
+
 
     def zip_value(value, key )
       zip?(key) ? self.class.get_compressor_for_key(key).compress( value ) : value

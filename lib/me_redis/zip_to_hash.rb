@@ -30,8 +30,8 @@ module MeRedis
     end
 
     def self.included(base)
-      base.extend( MeRedis::ClassMethods )
-      base.prepend( PrependMethods )
+      base.extend(MeRedis::ClassMethods)
+      base.prepend(PrependMethods)
     end
 
     def me_del( *keys )
