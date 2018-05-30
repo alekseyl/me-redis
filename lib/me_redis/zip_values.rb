@@ -1,6 +1,6 @@
 module MeRedis
   # todo warn in development that gzipped size iz bigger than strict
-  # use prepend for classes or extend on instances
+  # use prepend for classes
   module ZipValues
     module FutureUnzip
       def set_transformation(&block)
@@ -10,7 +10,7 @@ module MeRedis
         @old_transformation = @transformation
         @transformation = -> (vl) {
           if @old_transformation
-            @old_transformation.call( block.call(vl, self) )
+            @old_transformation.call(block.call(vl, self))
           else
             block.call(vl, self)
           end
@@ -19,18 +19,18 @@ module MeRedis
       end
 
       # patch futures we need only when we are returning values, usual setters returns OK
-      COMMANDS = %i[ incr incrby hincrby get hget getset mget hgetall ].map{|cmd| [cmd, true]}.to_h
+      COMMANDS = %i[incr incrby hincrby get hget getset mget hgetall].map{ |cmd| [cmd, true]}.to_h
     end
 
     module PrependMethods
-      def pipelined( &block )
+      def pipelined(&block)
         super do |redis|
           block.call(redis)
           _patch_futures(@client)
         end
       end
 
-      def multi( &block )
+      def multi(&block)
         super do |redis|
           block.call(redis)
           _patch_futures(@client)
@@ -43,13 +43,13 @@ module MeRedis
           ftr.set_transformation do |vl|
             if vl && FutureUnzip::COMMANDS[ftr._command[0]]
               # we only dealing here with GET methods, so it could be hash getters or get/mget
-              keys = ftr._command[0][0] == 'h' ? ftr._command[1,1] : ftr._command[1..-1]
+              keys = ftr._command[0][0] == 'h' ? ftr._command[1, 1] : ftr._command[1..-1]
               if ftr._command[0] == :mget
                 vl.each_with_index.map{ |v, i| zip?(keys[i]) ? self.class.get_compressor_for_key(keys[i]).decompress( v ) : v }
               elsif zip?(keys[0])
                 compressor = self.class.get_compressor_for_key(keys[0])
                 # on hash commands it could be an array
-                vl.is_a?(Array) ? vl.map!{|v| compressor.decompress( v ) } : compressor.decompress(vl)
+                vl.is_a?(Array) ? vl.map!{ |v| compressor.decompress(v) } : compressor.decompress(vl)
               else
                 vl
               end

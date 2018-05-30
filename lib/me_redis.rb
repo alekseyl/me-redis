@@ -144,24 +144,24 @@ module MeRedis
       me_config.default_compressor ||= MeRedis::ZipValues::EmptyCompressor
 
       me_config.compress_namespaces = case me_config.compress_namespaces
-                                        when Array
-                                          me_config.compress_namespaces.map{|ns| [replace_ns(ns), me_config.default_compressor] }.to_h
-                                        when String, Symbol, Regexp
-                                          { replace_ns( me_config.compress_namespaces ) => me_config.default_compressor }
-                                        when Hash
-                                          me_config.compress_namespaces.inject({}) do |sum, (name_space, compressor)|
-                                            name_space.is_a?( Array ) ?
-                                                sum.merge!( name_space.map{ |ns| [replace_ns( ns), compressor] }.to_h )
-                                                : sum[replace_ns(name_space)] = compressor
-                                            sum
-                                          end
-                                        else
-                                          raise ArgumentError.new(<<~NS_ERR) if me_config.compress_namespaces
+        when Array
+          me_config.compress_namespaces.map{|ns| [replace_ns(ns), me_config.default_compressor] }.to_h
+        when String, Symbol, Regexp
+          { replace_ns( me_config.compress_namespaces ) => me_config.default_compressor }
+        when Hash
+          me_config.compress_namespaces.inject({}) do |sum, (name_space, compressor)|
+          name_space.is_a?( Array ) ?
+              sum.merge!( name_space.map{ |ns| [replace_ns( ns), compressor] }.to_h )
+              : sum[replace_ns(name_space)] = compressor
+          sum
+          end
+        else
+          raise ArgumentError.new(<<~NS_ERR) if me_config.compress_namespaces
             Wrong class for compress_namespaces, expected Array, 
-                                Hash, String or Symbol! Got: #{me_config.compress_namespaces.class.to_s}
-                                          NS_ERR
-                                          {}
-                                      end
+            Hash, String or Symbol! Got: #{me_config.compress_namespaces.class.to_s}
+          NS_ERR
+          {}
+        end
 
       zip_ns_finder
     end

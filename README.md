@@ -282,8 +282,11 @@ Now I may suggest some best practices for MeRedis configure:
 * explicit crumbs schema is preferable over implicit
 * if you are going lazy, and use implicit schemas, than avoid keys reshuffling, 
   cause it messes with your cache
-* better to configure hash-max-ziplist-* in MeRedis.configure than elsewhere.
+* better to configure hash-max-ziplist-* in MeRedis.configure than 
+  elsewhere. And don't forget - this will reset them globally 
+  for this Redis server!
 * use MeRedis in persistent Redis-based system with extreme caution!
+
   
  
 # Custom Compressors
