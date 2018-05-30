@@ -441,5 +441,6 @@ The gem is available as open source under the terms of the [MIT License](http://
 
 ## ToDo List
 
+* add warning option for hash-max-ziplist-value overthrowing
 * add keys method 
 * refactor readme
