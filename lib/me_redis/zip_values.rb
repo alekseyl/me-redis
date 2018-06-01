@@ -41,7 +41,8 @@ module MeRedis
       base::Future.prepend(FutureUnzip)
 
       base.extend(MeRedis::ClassMethods)
-      base.me_config.default_compressor = MeRedis::ZipValues::ZlibCompressor
+
+      base.me_config.default_compressor = ::MeRedis::ZipValues::ZlibCompressor
     end
 
     def pipelined(&block)

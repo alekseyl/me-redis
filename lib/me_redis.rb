@@ -4,9 +4,6 @@ require 'me_redis/zip_to_hash'
 require 'me_redis/zip_values'
 require 'me_redis/me_redis_hot_migrator'
 require 'me_redis/integer'
-require 'me_redis/hash'
-require 'me_redis/regexp'
-
 require 'zlib'
 
 # Main ideas:
