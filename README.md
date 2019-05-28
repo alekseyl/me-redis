@@ -133,7 +133,7 @@ This is the right chain of prepending/including, so just remove unnecessary modu
 
 As you can see you can get a result with smallest or even none code changes!
 
-All the ideas is to move complexity to config.
+The idea is to move complexity to config.
    
 ### Config
 ```ruby
