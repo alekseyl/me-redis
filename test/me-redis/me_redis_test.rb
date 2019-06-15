@@ -17,8 +17,7 @@ class MeRedisTest < Minitest::Test
 
   extend ActiveSupport::Testing::Declarative
 
-  def redis; @clear_redis ||= RedisSafety.new
-  end
+  def redis; @clear_redis ||= RedisSafety.new end
 
   def setup; redis end
 
@@ -516,6 +515,25 @@ class MeRedisTest < Minitest::Test
     redis.flushdb
     hm_redis.me_mset('user:100', 5, 'user:101', 6)
     assert(hm_redis.me_mget('user:100', 'user:101') == %w[5 6])
+  end
+
+  test 'AwsConfigBlocker' do
+    aws_redis = Class.new(RedisSafety)
+    aws_redis.define_method(:config) {|*_| raise "AWS raise emulation" }
+
+    aws_redis.include(MeRedis)
+    assert_raises(StandardError) { aws_redis.new }
+
+    assert(
+      aws_redis.configure(
+        hash_max_ziplist_entries: 256,
+        hash_max_ziplist_value: 1024,
+        integers_to_base62: true,
+        zip_crumbs: :user )
+    )
+
+    aws_redis.prepend(MeRedis::AwsConfigBlocker)
+    assert( aws_redis.new.config == {} )
   end
 
 end

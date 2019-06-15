@@ -1,5 +1,5 @@
 module MeRedis
-  # todo warn in development that gzipped size iz bigger than strict
+  # todo warn in development when gzipped size iz bigger than strict
   # use prepend for classes
   module ZipValues
     module FutureUnzip

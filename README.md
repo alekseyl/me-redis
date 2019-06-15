@@ -94,6 +94,21 @@ If you want to include them separately look at MeRedis.included method:
 
 This is the right chain of prepending/including, so just remove unnecessary module.
 
+### AWS ElasticCache usage
+
+AWS blocks config call with exception. To prevent this behaviour prepend MeRedis successor 
+with AwsConfigBlocker module:
+
+```ruby
+Class.new(Redis)
+     .include(MeRedis)
+     .prepend( MeRedis::AwsConfigBlocker )
+     .configure({
+       # some config
+     }).new
+```
+
+
 ### Base use
 
 ```ruby
@@ -417,6 +432,11 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Testing
 
+```bash
+docker-compose build
+docker-compose run test
+```
+
 ### MockRedis
 
 If you are using in mock_redis gem for testing purpose and see some test 
@@ -427,7 +447,9 @@ for Redis class, but you can try it out.
  
 
 ### RedisSafety
- MeRedis tests itself against RedisSafety class which is a Redis descendant class. All instances of RedisSafety ensure that Redis DB is empty otherwise they will raise an error. This is a precaution measure to prevent you from accidentally  run MeRedis test again production DB.
+ MeRedis tests itself against RedisSafety class which is a Redis descendant class. 
+ All instances of RedisSafety ensure that Redis DB is empty otherwise they will raise an error. 
+ This is a precaution measure to prevent you from accidentally run MeRedis test again production DB.
  
 ```
   rake test REDIS_TEST_DB=5
