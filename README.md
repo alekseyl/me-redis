@@ -100,9 +100,11 @@ AWS blocks config call with exception. To prevent this behaviour prepend MeRedis
 with AwsConfigBlocker module:
 
 ```ruby
+
+# !!! it should be prepended before including main module.
 Class.new(Redis)
+     .prepend(MeRedis::AwsConfigBlocker)
      .include(MeRedis)
-     .prepend( MeRedis::AwsConfigBlocker )
      .configure({
        # some config
      }).new
@@ -158,10 +160,10 @@ The idea is to move complexity to config.
   #Options are: 
   
     # if set - configures Redis hash_max_ziplist_entries value,
-    # otherwise it will be filled from Redis hash-max-ziplist-value
+    # otherwise it will be filled from Redis hash-max-ziplist-entries
     :hash_max_ziplist_entries
     
-    # if set - configures Redis hash_max_ziplist_entries value,
+    # if set - configures Redis hash-max-ziplist-value value,
     # otherwise it will be filled from Redis hash-max-ziplist-value
     :hash_max_ziplist_value
      
@@ -466,6 +468,8 @@ The gem is available as open source under the terms of the [MIT License](http://
 
 ## ToDo List
 
+* Place config for keys zipping in text form into predefined key, so it would be observable with just redis-cli 
 * add warning option for hash-max-ziplist-value overthrowing
 * add keys method 
 * refactor readme
+* 
