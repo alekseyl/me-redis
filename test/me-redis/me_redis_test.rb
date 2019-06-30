@@ -519,7 +519,7 @@ class MeRedisTest < Minitest::Test
 
   test 'AwsConfigBlocker' do
     aws_redis = Class.new(RedisSafety)
-    aws_redis.define_method(:config) {|*_| raise "AWS raise emulation" }
+    aws_redis.send(:define_method, :config) {|*_| raise "AWS raise emulation" }
 
     aws_redis.include(MeRedis)
     assert_raises(StandardError) { aws_redis.new }
