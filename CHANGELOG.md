@@ -1,3 +1,6 @@
+# 0.1.4
+* set method signature fix 
+
 # 0.1.3
 * minor messaging changes for AWS config, warning popups not on config calls 
 but on prepend. Config calls just displays resulting config now

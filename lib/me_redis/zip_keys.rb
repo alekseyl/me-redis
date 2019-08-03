@@ -37,7 +37,7 @@ module MeRedis
     def persist(key); super(zip_key(key)) end
 
     def decrby( key, decrement ); super(zip_key(key), decrement) end
-    def set( key, value );  super( zip_key(key), value ) end
+    def set( key, value, options = {} );  super( zip_key(key), value, options ) end
     def mset( *key_values ); super( *key_values.each_slice(2).map{ |k,v| [zip_key(k),v] }.flatten ) end
     def mget( *keys ); super( *keys.map!{ |k| zip_key(k) } ) end
 
