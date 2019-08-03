@@ -1,5 +1,6 @@
 # 0.1.4
 * set method signature fix 
+* ttl will respect key zipping
 
 # 0.1.3
 * minor messaging changes for AWS config, warning popups not on config calls 

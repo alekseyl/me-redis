@@ -81,8 +81,8 @@ class MeRedisTest < Minitest::Test
     kz_redis.set(key, 'string')
     assert(kz_redis.get(key) == redis.get(kz_key))
 
-    kz_redis.set(key, 'string', ex: 10)
-    assert(kz_redis.ttl(key) < 10 && kz_redis.ttl(key) > 0)
+    kz_redis.set(key, 'string', ex: 100)
+    assert(kz_redis.ttl(key) <= 100 && kz_redis.ttl(key) > 0)
 
     kz_redis.getset(key, {hash: true})
     assert(kz_redis.get(key) == redis.get(kz_key))
@@ -284,8 +284,8 @@ class MeRedisTest < Minitest::Test
     assert(Zlib.inflate(redis.get(:key)) == str)
     assert(gz_redis.get(:key) == str)
 
-    gz_redis.set(:key, str, ex: 10)
-    assert(gz_redis.ttl(:key) < 10 && gz_redis.ttl(:key) > 0)
+    gz_redis.set(:key, str, ex: 100)
+    assert(gz_redis.ttl(:key) <= 100 && gz_redis.ttl(:key) > 0)
 
 
     gz_redis.hset(:hkey_1, 1, str)
