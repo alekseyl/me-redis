@@ -16,6 +16,11 @@ module MeRedis
         end
       end.join
     end
+    alias me_key zip_key
+
+    def keys( pattern )
+      super( me_key(pattern) )
+    end
 
     #---- h_methods ---------------------------
     def hdel( key, hkey ); super( zip_key(key), hkey ) end

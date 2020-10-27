@@ -36,31 +36,37 @@ module MeRedis
     end
 
     def me_config
-      @me_config ||= Struct.new(
+      @me_config ||= OpenStruct.new(
           # if set - configures Redis hash_max_ziplist_entries value,
           # otherwise it will be filled from Redis hash-max-ziplist-value
-          :hash_max_ziplist_entries,
+          hash_max_ziplist_entries: 512,
+
           # same as above only for value, only resets it globally if present
-          :hash_max_ziplist_value,
+          # :hash_max_ziplist_value,
+
           # array or hash or string/sym of key crumbs to zip, if a hash given it used as is,
           # otherwise meredis tries to construct hash by using first char from each key + integer in base62 form for
           # subsequent appearence of a crumb starting with same char
-          :zip_crumbs,
+          # :zip_crumbs,
+
           # zip integers in keys to base62 form
-          :integers_to_base62,
+          # :integers_to_base62,
+
           # regex composed from zip_crumbs keys and integer regexp if integers_to_base62 is set
-          :key_zip_regxp,
+          # :key_zip_regxp,
+
           # prefixes/namespaces for keys need zipping,
           # acceptable formats:
           # 1. single string/sym will map it to defauilt compressor
           # 2. array of string/syms will map it to defauilt compressor
           # 3. hash maps different kinds of 1 and 2 to custom compressors
-          :compress_namespaces,
-          # if configured than default_compressor used for compression of all keys matched and compress_namespaces is ignored
-          :compress_ns_regexp,
+          # :compress_namespaces,
 
-          :default_compressor
-      ).new(512)
+          # if configured than default_compressor used for compression of all keys matched and compress_namespaces is ignored
+          # :compress_ns_regexp,
+
+          # :default_compressor
+      )
     end
 
     def zip_crumbs; me_config.zip_crumbs end

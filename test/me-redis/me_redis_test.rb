@@ -1,6 +1,7 @@
 require 'test_helper'
 require 'redis'
 require 'me_redis'
+require 'byebug'
 
 # safety for Redis class, prevents to run test if base is not empty
 class RedisSafety < Redis
@@ -99,6 +100,8 @@ class MeRedisTest < Minitest::Test
 
     kz_redis.renamenx('some/long/construct/2', 'some/long/construct/3')
     assert(redis.exists('s/l/c/2'))
+
+    assert_equal(kz_redis.keys('some/*').sort, ['s/l/c/3','s/l/c/2'].sort)
   end
 
   def check_future(redis, must_be)

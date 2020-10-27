@@ -1,3 +1,7 @@
+# 0.1.5
+* keys will return keys after applying me_key transformation to a given pattern   
+* config now is an OpenStruct, not a Struct 
+
 # 0.1.4
 * set method signature fix 
 * ttl will respect key zipping
