@@ -9,17 +9,17 @@ module MeRedisHotMigrator
 
     base.class_eval do
       ZK_FALLBACK_METHODS.each do |method|
-        alias_method "_#{method}", method
+        alias_method "___#{method}", method
       end
 
       include(MeRedis)
 
       def me_get( key )
-        prev_future = _get( key ) unless @client.is_a?(self.class::Client)
+        prev_future = ___get( key ) unless @client.is_a?(self.class::Client)
         newvl = super(key)
 
         newvl.prev_future = prev_future if newvl.is_a?(self.class::Future)
-        newvl || _get( key )
+        newvl || ___get( key )
       end
 
       def me_mget(*keys)
@@ -36,15 +36,15 @@ module MeRedisHotMigrator
   module PrependMethods
     ZK_FALLBACK_METHODS.each do |method|
       define_method(method) do |*args|
-        prev_future = send("_#{method}", *args) unless @client.is_a?(self.class::Client)
+        prev_future = send("___#{method}", *args) unless @client.is_a?(self.class::Client)
         newvl = super(*args)
 
         newvl.prev_future = prev_future if newvl.is_a?(self.class::Future)
 
         if method != :mget
-          newvl || send("_#{method}", *args)
+          newvl || send("___#{method}", *args)
         else
-          newvl.is_a?(Array) ? newvl.zip( send("_#{method}", *args) ).map!{|nvl, oldv| nvl || oldv } : newvl
+          newvl.is_a?(Array) ? newvl.zip( send("___#{method}", *args) ).map!{|nvl, oldv| nvl || oldv } : newvl
         end
 
       end

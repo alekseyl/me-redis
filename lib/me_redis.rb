@@ -17,16 +17,15 @@ require 'zlib'
 module MeRedis
   module ClassMethods
 
-    def configure( config = nil )
+    def configure( **config )
       # at start they are nils, but at subsequent calls they may not be nils
       me_config.key_zip_regxp = nil
       me_config.compress_ns_regexp = nil
       @zip_ns_finder = nil
 
-      config.each{ |key,value| me_config.send( "#{key}=", value ) } if config
+      config.each { |key,value| me_config.send( "#{key}=", value ) } if config
 
       yield( me_config ) if block_given?
-
 
       prepare_zip_crumbs
       prepare_compressors
@@ -99,6 +98,7 @@ module MeRedis
 
     def zip_ns_finder
       return @zip_ns_finder if @zip_ns_finder
+
       regexps_compress_ns = me_config.compress_namespaces.keys.select{|key| key.is_a?(Regexp) }
       strs_compress_ns = me_config.compress_namespaces.keys.select{|key| !key.is_a?(Regexp) }
 

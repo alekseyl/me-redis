@@ -3,8 +3,8 @@ module MeRedis
   module ZipToHash
 
     module PrependMethods
-      def initialize(*args, &block)
-        super(*args, &block)
+      def initialize(*args, **kwargs, &block)
+        super(*args,**kwargs, &block)
 
         # hash-max-ziplist-entries must be cashed, we can't ask Redis every time we need to zip keys,
         # cause it's less performant and impossible during pipelining.

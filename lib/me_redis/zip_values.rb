@@ -98,7 +98,7 @@ module MeRedis
 
     # Redis prepended methods
     def get( key ); unzip_value( super( key ), key) end
-    def set( key, value, options = {} ); super( key, zip_value(value, key), options ) end
+    def set( key, value, **options); super( key, zip_value(value, key), **options ) end
 
     def mget(*args); unzip_arr_or_future(super(*args), args ) end
     def mset(*args); super( *map_msets_arr(args) ) end

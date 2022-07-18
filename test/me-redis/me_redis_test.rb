@@ -3,6 +3,8 @@ require 'redis'
 require 'me_redis'
 require 'byebug'
 
+Redis.exists_returns_integer = false
+
 # safety for Redis class, prevents to run test if base is not empty
 class RedisSafety < Redis
   def initialize(options = {})
@@ -20,7 +22,7 @@ class MeRedisTest < Minitest::Test
 
   def redis; @clear_redis ||= RedisSafety.new end
 
-  def setup; redis end
+  def setup; redis.flushdb end
 
   def teardown; redis.flushdb end
 

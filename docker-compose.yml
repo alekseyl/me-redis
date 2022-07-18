@@ -15,3 +15,16 @@ services:
       - redis
     environment:
       REDIS_URL: redis://redis:6379
+
+  test3:
+    build:
+      context: .
+      dockerfile: ruby3.Dockerfile
+    image: me-redis-test-3
+    command: bundle exec rake test
+    volumes:
+      - '.:/me-redis'
+    depends_on:
+      - redis
+    environment:
+      REDIS_URL: redis://redis:6379

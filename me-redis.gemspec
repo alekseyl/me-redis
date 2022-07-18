@@ -27,7 +27,7 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency 'redis', '>= 3.0'
+  spec.add_dependency 'redis', '>= 3.0', '<= 4.5.1'
   spec.add_dependency 'base62-rb'
   spec.add_dependency "awesome_print"
 

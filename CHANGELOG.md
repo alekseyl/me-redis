@@ -1,3 +1,6 @@
+# 0.1.6
+* adapted for ruby 3.1
+
 # 0.1.5
 * keys will return keys after applying me_key transformation to a given pattern   
 * config now is an OpenStruct, not a Struct 
